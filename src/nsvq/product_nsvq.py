@@ -15,6 +15,10 @@ class ProductNSVQ(nn.Module):
         - num_embeddings (int): Codebook size (No. of codewords).
         - embedding_dim (int): Dimensionality of embeddings.
         - num_codebooks (int): No. of codebooks involved in quantization.
+        - diveq (bool): Whether to use DiVeQ technique for codebook learning. DiVeQ is
+            the improved successor of NSVQ method.
+        - diveq_noise_var (float): Variance of the directional noise in DiVeQ.
+            Ineffective if diveq=False. Recommended diveq_noise_var < 1e-2.
         - replacement_iters (int): Replacement interval (number of training iterations
             to apply codebook replacement). Recommended 50 < replacement_iters < 300.
         - discard_threshold (float): Threshold to discard the codebook entries that are
@@ -43,6 +47,8 @@ class ProductNSVQ(nn.Module):
             num_embeddings: int,
             embedding_dim: int,
             num_codebooks: int,
+            diveq: bool = False,
+            diveq_noise_var: float = 0.001,
             replacement_iters: int = 100,
             discard_threshold: float = 0.01,
             perturb_eps: float = 1e-9,
@@ -56,6 +62,8 @@ class ProductNSVQ(nn.Module):
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
         self.num_codebooks = num_codebooks
+        self.diveq = diveq
+        self.diveq_noise_var = diveq_noise_var
         self.replacement_iters = replacement_iters
         self.discard_threshold = discard_threshold
         self.perturb_eps = perturb_eps
@@ -69,6 +77,12 @@ class ProductNSVQ(nn.Module):
 
         # ---------------- User warnings ----------------
         if allow_warning:
+            if self.diveq:
+                if diveq_noise_var > 0.01:
+                    warnings.warn(f"`diveq_noise_var` is set to {diveq_noise_var}, which is"
+                                  f" quite large. Values > 0.01 may overshoot"
+                                  f" nearest-neighbor mapping.", UserWarning)
+
             if codebook_reset:
                 if replacement_iters < 50:
                     warnings.warn(f"`replacement_iters` is set to"
@@ -144,14 +158,19 @@ class ProductNSVQ(nn.Module):
 
         z_hard_quantized = torch.cat(quantized_input_list[:], dim=1)
 
-        # NSVQ technique
-        random_vectors = normal.Normal(0, 1).sample(z.shape).to(z.device)
-        norm_quantization_error = torch.linalg.norm(z - z_hard_quantized, dim=1, keepdim=True)
-        random_vectors_normalized = random_vectors / torch.linalg.norm(random_vectors, dim=1,
-                                                        keepdim=True).clamp_min(1e-12)
-        
-        vq_error = norm_quantization_error * random_vectors_normalized.detach()
+        if self.diveq: # Use DiVeQ technique
+            direction = z_hard_quantized - z
+            random_vectors = (normal.Normal(0, self.diveq_noise_var).sample(z.shape).to(z.device) + direction)
+            normalized = random_vectors / torch.linalg.norm(random_vectors, dim=1, keepdim=True).clamp_min(1e-12)
+            error_magnitude = torch.linalg.norm(z_hard_quantized - z, dim=1, keepdim=True)
+            vq_error = error_magnitude * normalized.detach()
 
+        else: # Use NSVQ technique
+            random_vectors = normal.Normal(0, 1).sample(z.shape).to(z.device)
+            normalized = random_vectors / torch.linalg.norm(random_vectors, dim=1, keepdim=True).clamp_min(1e-12)
+            error_magnitude = torch.linalg.norm(z_hard_quantized - z, dim=1, keepdim=True)
+            vq_error = error_magnitude * normalized.detach()
+        
         z_q = z + vq_error # Differentiable quantized input
 
         # Track used indices for codebook replacement
@@ -202,6 +221,12 @@ class ProductNSVQ(nn.Module):
 
     # ---------------- Utility functions ----------------
     def _check_constraints(self,) -> None:
+        if self.diveq:
+            if self.diveq_noise_var <= 0.0:
+                raise ValueError("`diveq_noise_var` must be a positive float value. To have more"
+                                 " precise nearest-neighbor assignments, it is recommended"
+                                 " that diveq_noise_var < 1e-2.")
+
         if self.codebook_reset:
             if (self.replacement_iters <= 0) or (type(self.replacement_iters) is not int):
                 raise ValueError("`replacement_iters` must be a positive integer value."
@@ -275,6 +300,8 @@ class ProductNSVQ(nn.Module):
             f"num_embeddings={self.num_embeddings}, "
             f"embedding_dim={self.embedding_dim}, "
             f"num_codebooks={self.num_codebooks}, "
+            f"diveq={self.diveq}, "
+            f"diveq_noise_var={self.diveq_noise_var}, "
             f"replacement_iters={self.replacement_iters}, "
             f"discard_threshold={self.discard_threshold}, "
             f"perturb_eps={self.perturb_eps}, "

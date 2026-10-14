@@ -13,6 +13,9 @@ VQ variants that use multiple codebooks for vector quantization, i.e., Residual 
 2. `from nsvq import ResidualNSVQ` optimizes the Residual VQ codebooks via NSVQ technique.
 3. `from nsvq import ProductNSVQ` optimizes the Product VQ codebooks via NSVQ technique.
 
+> [!TIP]
+> [DiVeQ](https://github.com/AaltoML/DiVeQ) is an improved successor of NSVQ method, which reduces the stocahsticity of nearest-neighbor assingments. To use DiVeQ technique, you can simply set `diveq=True` inside each of NSVQ, ResidualNSVQ, and ProductNSVQ modules.
+
 # Installation
 
 You can install `nsvq` through `pip` by running:
