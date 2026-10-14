@@ -45,11 +45,7 @@ class Model(nn.Module):
         self._encoder = Encoder(3, num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
-        if self.codebook_optimization == 'gumbel_softmax':
-            self._pre_vq_conv = nn.Conv2d(in_channels=num_hiddens,
-                                  out_channels=num_embeddings, kernel_size=1, stride=1)
-        else:
-            self._pre_vq_conv = nn.Conv2d(in_channels=num_hiddens,
+        self._pre_vq_conv = nn.Conv2d(in_channels=num_hiddens,
                                   out_channels=embedding_dim, kernel_size=1, stride=1)
 
         # ------------- Use NSVQ modules for quantization -------------
