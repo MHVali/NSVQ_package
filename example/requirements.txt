@@ -1,0 +1,9 @@
+--extra-index-url https://download.pytorch.org/whl/cu118
+
+torch==2.0.0
+torchvision==0.15.1
+tqdm==4.66.5
+requests==2.28.1
+numpy==1.26
+kagglehub==1.0.0
+nsvq

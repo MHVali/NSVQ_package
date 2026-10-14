@@ -1,0 +1,30 @@
+[project]
+name = "nsvq"
+authors = [{name = "Mohammad Hassan Vali", email = "mohammad.vali@aalto.fi"}]
+version = "0.1.0"
+description = "A PyTorch class for end-to-end training of vector quantization codebook in a deep neural network."
+readme = "README.md"
+license = { file = "LICENSE.txt" }
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.0.0",
+]
+
+keywords = [
+    "deep-learning",
+    "pytorch",
+    "vector-quantization",
+    "machine-learning",
+    "vq-vae",
+    "tokenization",
+    "representation-learning"
+]
+
+[project.urls]
+Repository = "https://github.com/MHVali/NSVQ_package"
+Issues = "https://github.com/MHVali/NSVQ_package/issues"
+Paper = "https://ieeexplore.ieee.org/document/9696322"
+
+[build-system]
+requires = ["uv_build>=0.9.10,<0.10.0"]
+build-backend = "uv_build"
