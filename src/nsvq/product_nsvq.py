@@ -37,10 +37,10 @@ class ProductNSVQ(nn.Module):
 
     Returns:
         - z_q (torch.Tensor): Differentiable quantized input/latent. shape (N, D)
-        - indices_list (list of torch.Tensor): List of selected codebook indices for
-            each individual codebook. length = num_codebooks
-        - perplexity_list (list of float): List of codebooks perplexity (average
-            codebook usage). length = num_codebooks
+        - indices_all (torch.Tensor): Selected codebook indices for all
+            codebooks. shape (num_codebooks, N)
+        - perplexity_all (torch.Tensor): Perplexity (average codebook usage)
+            for all codebooks. shape (num_codebooks, )
     """
     def __init__(
             self,
@@ -122,17 +122,17 @@ class ProductNSVQ(nn.Module):
         self.register_buffer("iter_counter", torch.zeros(1, dtype=torch.int32))
 
     # ---------------- Forward pass (Core API) ----------------
-    def forward(self, z: torch.Tensor) -> Tuple[torch.Tensor, list, list]:
+    def forward(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Args:
             - z (torch.Tensor): input/latent. shape (N, D)
 
         Returns:
             - z_q (torch.Tensor): Differentiable quantized input/latent. shape (N, D)
-            - indices_list (list of torch.Tensor): List of selected codebook indices for
-                each individual codebook. length = num_codebooks
-            - perplexity_list (list of float): List of codebooks perplexity (average
-                codebook usage). length = num_codebooks
+            - indices_all (torch.Tensor): Selected codebook indices for all
+                codebooks. shape (num_codebooks, N)
+            - perplexity_all (torch.Tensor): Perplexity (average codebook usage)
+                for all codebooks. shape (num_codebooks, )
         """
         self._check_input(z)
 
@@ -180,11 +180,14 @@ class ProductNSVQ(nn.Module):
                 if self.iter_counter.item() % self.replacement_iters == 0:
                     self._replace_unused_entries() # Applies codebook replacement
 
-        return z_q, indices_list, perplexity_list
+        indices_all = torch.stack(indices_list, dim=0)
+        perplexity_all = torch.stack(perplexity_list, dim=0)
+
+        return z_q, indices_all, perplexity_all
 
     # ---------------- Quantization for Inference ----------------
     @torch.no_grad()
-    def inference(self, z: torch.Tensor) -> Tuple[torch.Tensor, list, list]:
+    def inference(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Deterministic hard quantization by mapping the input to the nearest codeword.
         Args:
@@ -192,10 +195,10 @@ class ProductNSVQ(nn.Module):
 
         Returns:
             - z_q_hard (torch.Tensor): Hard quantized input/latent. shape (N, D)
-            - indices_list (list of torch.Tensor): List of selected codebook indices for
-                each individual codebook. length = num_codebooks
-            - perplexity_list (list of float): List of codebooks perplexity (average
-                codebook usage). length = num_codebooks
+            - indices_all (torch.Tensor): Selected codebook indices for all
+                codebooks. shape (num_codebooks, N)
+            - perplexity_all (torch.Tensor): Perplexity (average codebook usage)
+                for all codebooks. shape (num_codebooks, )
         """
         self._check_input(z)
 
@@ -217,7 +220,10 @@ class ProductNSVQ(nn.Module):
 
         z_q_hard = torch.cat(quantized_input_list[:], dim=1)
 
-        return z_q_hard, indices_list, perplexity_list
+        indices_all = torch.stack(indices_list, dim=0)
+        perplexity_all = torch.stack(perplexity_list, dim=0)
+
+        return z_q_hard, indices_all, perplexity_all
 
     # ---------------- Utility functions ----------------
     def _check_constraints(self,) -> None:
@@ -264,7 +270,7 @@ class ProductNSVQ(nn.Module):
         encodings.scatter_(1, indices.unsqueeze(1), 1)
         avg_probs = torch.mean(encodings, dim=0)
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
-        return perplexity.item()
+        return perplexity
 
     def _replace_unused_entries(self) -> None:
         with torch.no_grad():
