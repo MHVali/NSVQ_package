@@ -101,6 +101,8 @@ Here, we provide the list of parameters that are used as inputs for three differ
 
 - `num_embeddings` (integer): Codebook size or the number of codewords in the codebook.
 - `embedding_dim` (integer): Dimensionality of each codebook entry or codeword.
+- `diveq` (bool): Whether to use DiVeQ technique for codebook learning. DiVeQ is the improved successor of NSVQ method.
+- `diveq_noise_var` (float): Variance of the directional noise in DiVeQ. Ineffective if `diveq=False`.
 - `replacement_iters` (integer): Number of training iterations to apply codebook replacement.
 - `discard_threshold` (float): Threshold to discard the codebook entries that are used less than this threshold after *replacement_iters* iterations.
 - `perturb_eps` (float): Adjusts perturbation/shift magnitude from used codewords for codebook replacement.
@@ -119,7 +121,7 @@ Here, we provide the list of parameters that are used as inputs for three differ
 For further details about different vector quantization modules in the `nsvq` package and their corresponding parameters, please see the details provided in the Python codes in `src` directory of the `nsvq` package.
 
 # Citation
-If this package contributed to your work, please consider citing it:
+If this package contributed to your work, please consider citing **NSVQ** as
 
 ```
 @article{vali2022nsvq,
@@ -129,6 +131,17 @@ If this package contributed to your work, please consider citing it:
   volume={10},
   pages={13598--13610},
   year={2022}
+}
+```
+
+and **DiVeQ** as
+
+```
+@InProceedings{vali2026diveq,
+    title={{DiVeQ}: {D}ifferentiable Vector Quantization Using the Reparameterization Trick},
+    author={Vali, Mohammad Hassan and B{\"a}ckstr{\"o}m, Tom and Solin, Arno},
+    booktitle={International Conference on Learning Representations (ICLR)},
+    year={2026}
 }
 ```
 
