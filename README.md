@@ -1,7 +1,7 @@
 # Welcome to nsvq
 `nsvq` (short for Noise Substitution Vector Quantization) is a tool for implementing and training vector quantization (VQ) in deep neural networks (DNNs), such as a VQ-VAE. It allows end-to-end training of DNNs that contain the non-differentiable VQ module, without any auxiliary losses and hyperparameter tunings. `nsvq` is implemented via PyTorch, and it requires `python >= 3.11` and `torch >= 2.0.0` .
 
-![alt text](https://raw.githubusercontent.com/AaltoML/DiVeQ/main/diveq_teaser.png)
+![alt text](https://raw.githubusercontent.com/MHVali/Noise-Substitution-in-Vector-Quantization/main/nsvq_teaser.png)
 
 The `nsvq` method is published as a research paper entitled [*"NSVQ: Noise Substitution in Vector Quantization for Machine Learning"*](https://ieeexplore.ieee.org/document/9696322) in the IEEE Access journal in 2022.
 
